@@ -37,7 +37,7 @@ class treeWater:
                 self.GPIO_wtr_p01 = 23
                 
                 # Setup the water level indicator
-                self.wtrLevel = LEDBarGraph(self.GPIO_led_R1, self.GPIO_led_Y1, self.GPIO_led_G1, pwm=True)
+#                self.wtrLevel = LEDBarGraph(self.GPIO_led_R1, self.GPIO_led_Y1, self.GPIO_led_G1, pwm=True)
                 
                 # Setup the Pump Water Level Sensor
                 # _pumpWtrLevelGnd should remain ON the entire time
@@ -120,6 +120,16 @@ class treeWater:
                         # Cool this down a little
                         sleep(0.5)
 
+        def autoFill(self):
+                self.log("Automatic filler process running...")
+                while True:
+                        if self.WtrLevel.value <= 0.5 and self.pumpWtrLevel.value:
+                                self.pumpRun()
+                        else:
+                                self.pumpStop()
+                        # Cool this down a little
+                        sleep(0.5)
+                        
         def monitorWtrPump(self):
                 self.log("Pump water level checker running...")
                 lastState = not self.pumpWtrLevel.value
@@ -137,12 +147,15 @@ class treeWater:
                                 else:
                                         self.log("Low pump water level","WARNING")
                                         self.pumpStsLED.blink(0.5,0.5,None,True)
+                        # Cool this down a little
+                        sleep(0.5)
 
         def monitorTreeWtr(self):
-                self.log("Tree water level monitor running.")
+                self.log("Tree water level monitor running...")
+                self.wtrLevel = LEDBarGraph(self.GPIO_led_R1, self.GPIO_led_Y1, self.GPIO_led_G1, pwm=True)
                 level = 0
                 lastLevel = -1
-                
+
                 while True:
                         # This is terrible, horrible, very bad code!
                         if self.treeWtrLevel13.value:
@@ -179,15 +192,13 @@ class treeWater:
                                 lastLevel = level
 
                         level = level / 13
-                        
                         self.wtrLevel.value = level
-
                         sleep(1)
 
 
 def parent():
         tree = treeWater()
-        
+
         # We should spawn these children in a better manner with IPC
         manualRun = os.fork()
         if manualRun == 0:
@@ -204,6 +215,11 @@ def parent():
                 tree.monitorTreeWtr()
                 os._exit()
 
+#        autoFill = os.fork()
+#        if autoFill == 0:
+#                tree.autoFill()
+#                os._exit()
+
         print("Waiting for children to start...")
         sleep(5)
         
@@ -211,12 +227,16 @@ def parent():
                 reply = input("\nq for quit\n")
                 if reply == 'q':
                         break
-        
+
         os.kill(manualRun, signal.SIGKILL)
         os.kill(monitorWtrPump, signal.SIGKILL)
         os.kill(monitorTreeWtr, signal.SIGKILL)
+#        os.kill(autoFill, signal.SIGKILL)
         tree.Shutdown()
+        wtrLevel = LEDBarGraph(tree.GPIO_led_R1, tree.GPIO_led_Y1, tree.GPIO_led_G1, pwm=True)
+        wtrLevel = 0.0
 
+        
 parent()
 
 #atexit.register(tree.Shutdown)
