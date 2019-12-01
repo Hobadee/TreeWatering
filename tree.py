@@ -224,9 +224,11 @@ def parent():
         sleep(5)
         
         while True:
-                reply = input("\nq for quit\n")
-                if reply == 'q':
-                        break
+                sleep(1)
+                # This works great for command line, but kills it when it's daemonized
+#                reply = input("\nq for quit\n")
+#                if reply == 'q':
+#                        break
 
         os.kill(manualRun, signal.SIGKILL)
         os.kill(monitorWtrPump, signal.SIGKILL)
