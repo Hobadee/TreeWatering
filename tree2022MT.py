@@ -316,6 +316,7 @@ def limit_pct(value):
 
 treeWtr = treeWtr()
 
+# Taken from https://stackoverflow.com/questions/21974029/python-sharing-class-instance-among-threads
 threads = [ treeWtrPumpLevel(treeWtr=treeWtr),
             treeWtrPump(treeWtr=treeWtr),
             treeWtrLevel(treeWtr=treeWtr),
